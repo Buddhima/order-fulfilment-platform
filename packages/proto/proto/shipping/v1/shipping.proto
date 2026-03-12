@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package shipping.v1;
+
+service ShippingQuoteService {
+  rpc GetQuote(GetQuoteRequest) returns (GetQuoteResponse);
+}
+
+message GetQuoteRequest {
+  string order_id = 1;
+  string destination_postal_code = 2;
+  int32 item_count = 3;
+  int32 total_quantity = 4;
+}
+
+message GetQuoteResponse {
+  bool available = 1;
+  double amount = 2;
+  string currency = 3;
+  string reason = 4;
+}

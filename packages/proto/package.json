@@ -1,0 +1,30 @@
+{
+  "name": "@assessment/proto",
+  "version": "0.1.0",
+  "description": "Generated protobuf stubs for the order fulfilment assessment",
+  "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "license": "UNLICENSED",
+  "scripts": {
+    "clean": "rm -rf build dist *.tgz fraud inventory shipping",
+    "lint": "npx --no-install buf lint",
+    "stubs": "npx --no-install buf generate",
+    "pack:local": "sh ./scripts/generate.sh"
+  },
+  "files": [
+    "build/**/*",
+    "runtime/**/*",
+    "README.md"
+  ],
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.3",
+    "google-protobuf": "^4.0.0"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.66.0",
+    "grpc-tools": "^1.13.1",
+    "ts-protoc-gen": "^0.15.0"
+  }
+}

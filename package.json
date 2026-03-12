@@ -1,0 +1,32 @@
+{
+  "name": "order-fulfilment-assessment",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Starter monorepo for full-stack interview assessment",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "web-client"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present",
+    "deps:install": "npm run proto:pack && sh ./scripts/install-deps.sh",
+    "deps:reset": "sh ./scripts/reset-deps.sh",
+    "proto:clean": "npm --workspace @assessment/proto run clean",
+    "proto:lint": "npm --workspace @assessment/proto run lint",
+    "proto:stubs": "npm --workspace @assessment/proto run stubs",
+    "proto:pack": "npm --workspace @assessment/proto run pack:local",
+    "knip": "knip"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.0",
+    "knip": "^5.86.0",
+    "typescript": "^5.9.3"
+  }
+}

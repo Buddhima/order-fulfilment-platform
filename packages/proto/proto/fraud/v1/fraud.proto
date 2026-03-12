@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package fraud.v1;
+
+service FraudScoreService {
+  rpc ScoreOrder(ScoreOrderRequest) returns (ScoreOrderResponse);
+}
+
+message ScoreOrderRequest {
+  string order_id = 1;
+  string customer_identifier = 2;
+  int32 total_quantity = 3;
+}
+
+message ScoreOrderResponse {
+  int32 score = 1;
+  bool blocked = 2;
+  string reason = 3;
+}

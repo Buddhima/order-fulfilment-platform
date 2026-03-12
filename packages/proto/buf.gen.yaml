@@ -1,0 +1,18 @@
+version: v2
+plugins:
+  - protoc_builtin: js
+    protoc_path: ./node_modules/grpc-tools/bin/protoc
+    out: build
+    opt:
+      - import_style=commonjs
+      - binary
+  - local: ./node_modules/grpc-tools/bin/grpc_node_plugin
+    out: build
+    opt:
+      - grpc_js
+  - local: ./node_modules/.bin/protoc-gen-ts
+    out: build
+    opt:
+      - service=grpc-node,mode=grpc-js
+inputs:
+  - directory: proto

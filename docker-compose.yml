@@ -1,0 +1,93 @@
+services:
+  mariadb:
+    image: mariadb:11.4
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-root_password}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-fulfilment}
+      MARIADB_USER: ${MARIADB_USER:-app}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-app_password}
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mariadb-admin ping -h 127.0.0.1 -uroot -p$${MARIADB_ROOT_PASSWORD} --silent"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  mock-inventory:
+    image: node:24-bookworm-slim
+    working_dir: /app
+    environment:
+      GRPC_BIND_ADDRESS: 0.0.0.0:50051
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ./services/mock-inventory:/app
+      - ./packages/proto/dist:/packages/proto/dist:ro
+
+  mock-shipping:
+    image: node:24-bookworm-slim
+    working_dir: /app
+    environment:
+      GRPC_BIND_ADDRESS: 0.0.0.0:50052
+      SHIPPING_LATENCY_MS: ${SHIPPING_LATENCY_MS:-0}
+      SHIPPING_ERROR_MODE: ${SHIPPING_ERROR_MODE:-none}
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ./services/mock-shipping:/app
+      - ./packages/proto/dist:/packages/proto/dist:ro
+
+  mock-fraud:
+    image: node:24-bookworm-slim
+    working_dir: /app
+    environment:
+      GRPC_BIND_ADDRESS: 0.0.0.0:50053
+      FRAUD_ERROR_MODE: ${FRAUD_ERROR_MODE:-none}
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ./services/mock-fraud:/app
+      - ./packages/proto/dist:/packages/proto/dist:ro
+
+  api-gateway:
+    image: node:24-bookworm-slim
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    working_dir: /app
+    environment:
+      PORT: "4000"
+      DB_HOST: ${DB_HOST:-mariadb}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-fulfilment}
+      DB_USER: ${DB_USER:-app}
+      DB_PASSWORD: ${DB_PASSWORD:-app_password}
+      INVENTORY_SERVICE_ADDRESS: ${INVENTORY_SERVICE_ADDRESS:-mock-inventory:50051}
+      SHIPPING_SERVICE_ADDRESS: ${SHIPPING_SERVICE_ADDRESS:-mock-shipping:50052}
+      FRAUD_SERVICE_ADDRESS: ${FRAUD_SERVICE_ADDRESS:-mock-fraud:50053}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+    ports:
+      - "4000:4000"
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ./services/api-gateway:/app
+      - ./packages/proto/dist:/packages/proto/dist:ro
+
+  web-client:
+    image: node:24-bookworm-slim
+    working_dir: /app
+    environment:
+      CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-true}
+    ports:
+      - "5173:5173"
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ./web-client:/app
+
+volumes:
+  mariadb_data:

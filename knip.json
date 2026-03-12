@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreDependencies": [
+    "@assessment/proto",
+    "@grpc/grpc-js",
+    "google-protobuf",
+    "grpc-tools",
+    "ts-protoc-gen"
+  ],
+  "ignore": [
+    "packages/proto/runtime/grpc.d.ts",
+    "packages/proto/runtime/grpc.js"
+  ],
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  },
+  "tags": [
+    "-lintignore"
+  ],
+  "workspaces": {
+    ".": {}
+  }
+}
