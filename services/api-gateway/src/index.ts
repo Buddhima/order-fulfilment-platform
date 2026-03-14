@@ -5,7 +5,10 @@ import { expressMiddleware } from "@as-integrations/express5";
 import cors from "cors";
 import env from "env-var";
 import express from "express";
+import typeDefs from "./schema/typeDefs.ts";
+import resolvers from "./resolvers/orderResolvers.ts";
 
+ 
 import { registerHealthRoute } from "./health";
 
 interface RuntimeConfig {
@@ -59,16 +62,8 @@ export async function createApp(): Promise<express.Express> {
     // boundaries for persistence, workflow orchestration, and GraphQL integration.
     // Generated gRPC stubs are prepackaged in `@assessment/proto`; decide where to own
     // client construction, reuse, timeouts, and error mapping inside your structure.
-    typeDefs: `
-      type Query {
-        _placeholder: String!
-      }
-    `,
-    resolvers: {
-      Query: {
-        _placeholder: (): string => "replace-me",
-      },
-    },
+    typeDefs,
+    resolvers,
   });
 
   await apolloServer.start();
