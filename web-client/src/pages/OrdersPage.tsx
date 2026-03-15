@@ -78,9 +78,15 @@ export default function OrdersPage() {
                 </IonCard>
 
                 <IonList>
-                    {data?.orders?.map((order: any) => (
-                        <OrderCard key={order.id} order={order} />
-                    ))}
+                    {data?.orders?.length ? (
+                        data.orders.map((order: any) => <OrderCard key={order.id} order={order} />)
+                    ) : (
+                        <IonItem lines="none">
+                            <IonLabel color="medium" className="ion-text-center">
+                                No orders found.
+                            </IonLabel>
+                        </IonItem>
+                    )}
                 </IonList>
 
             </IonContent>
