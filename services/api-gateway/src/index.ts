@@ -5,10 +5,14 @@ import { expressMiddleware } from "@as-integrations/express5";
 import cors from "cors";
 import env from "env-var";
 import express from "express";
-import typeDefs from "./schema/typeDefs.ts";
-import resolvers from "./resolvers/orderResolvers.ts";
+import typeDefs from "./schema/typeDefs";
+import resolvers from "./resolvers/orderResolvers";
 
- 
+import mysql, { type Pool } from "mysql2/promise";
+
+import { buildRepositories } from "./repositories/build";
+import type { GraphQLContext } from "./types/context";
+
 import { registerHealthRoute } from "./health";
 
 interface RuntimeConfig {
@@ -48,13 +52,33 @@ export function readConfig(): RuntimeConfig {
   };
 }
 
+// Function to generate db connection pool
+function createPool(cfg: RuntimeConfig): Pool {
+  return mysql.createPool({
+    host: cfg.dbHost,
+    port: cfg.dbPort,
+    user: cfg.dbUser,
+    password: cfg.dbPassword,
+    database: cfg.dbName,
+    connectionLimit: 10,
+  });
+}
+
+
 export async function createApp(): Promise<express.Express> {
   const app = express();
   const runtimeConfig = readConfig();
 
+  // Create a single pool for the entire app lifetime.
+  const pool = createPool(runtimeConfig);
+
+  // Build repositories once and reuse (they all share the same pool).
+  const repos = buildRepositories(pool);
+
   registerHealthRoute(app);
 
-  const apolloServer = new ApolloServer({
+  // Initiating Apollo server with GraphQLContext
+  const apolloServer = new ApolloServer<GraphQLContext>({
     // Candidate note: Apollo is intentionally provided, but the GraphQL shape is not.
     // Replace this placeholder schema with the approach that fits your design:
     // SDL-first, code-first, schema composition, resolver layout, context wiring, etc.
@@ -66,7 +90,7 @@ export async function createApp(): Promise<express.Express> {
     resolvers,
   });
 
-  await apolloServer.start();
+  await apolloServer.start();   
 
   app.use(
     "/graphql",
@@ -74,7 +98,13 @@ export async function createApp(): Promise<express.Express> {
       origin: runtimeConfig.corsOrigin,
     }),
     express.json(),
-    expressMiddleware(apolloServer),
+
+    expressMiddleware(apolloServer, {
+      context: async (): Promise<GraphQLContext> => ({
+        db: pool,
+        repos,
+      }),
+    }),
   );
 
   app.get("/", (_request, response) => {
