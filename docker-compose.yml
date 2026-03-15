@@ -20,6 +20,7 @@ services:
       start_period: 10s
     volumes:
       - mariadb_data:/var/lib/mysql
+      - ./db-scripts:/docker-entrypoint-initdb.d
 
   mock-inventory:
     image: node:24-bookworm-slim
