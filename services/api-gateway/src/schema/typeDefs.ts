@@ -21,7 +21,7 @@ const typeDefs = `
   type OrderEvent {
     type: String!
     data: JSON
-    createdAt: String!
+    createdAt: DateTime!
   }
 
 
@@ -34,8 +34,8 @@ const typeDefs = `
     fraudScore: Int
     shippingAmount: Float
     latestError: String
-    createdAt: String!
-    updatedAt: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
   }
 
 
@@ -63,6 +63,7 @@ const typeDefs = `
   }
 
   scalar JSON
+  scalar DateTime
 `;
 
 export default typeDefs;
