@@ -33,3 +33,20 @@ CREATE TABLE IF NOT EXISTS order_items (
   CONSTRAINT chk_quantity
     CHECK (quantity > 0)
 );
+
+CREATE TABLE IF NOT EXISTS order_events (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+  order_id BIGINT NOT NULL,
+
+  event_type VARCHAR(100) NOT NULL,
+
+  event_data JSON,
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_order_events_order
+    FOREIGN KEY (order_id)
+    REFERENCES orders(id)
+    ON DELETE CASCADE
+);

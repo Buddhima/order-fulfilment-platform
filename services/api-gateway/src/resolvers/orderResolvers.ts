@@ -5,17 +5,23 @@ const resolvers = {
 
         orders: async (_, { status }, ctx: GraphQLContext) => {
 
-            const db_orders = await ctx.repos.order.getOrders();
             if (!status) {
-                return db_orders;
+                const orders = await ctx.repos.order.getOrders();
+                return orders;
+            } else {
+                return await ctx.repos.order.getOrdersByStatus(status);
             }
 
-            return db_orders.filter(order => order.status === status);
+            // return orders.filter(order => order.status === status);
         },
 
         order: async (_, { id }, ctx: GraphQLContext) => {
             return await ctx.repos.order.getOrderById(id);
-        }
+        },
+
+        orderEvents: async (_, { id }, ctx: GraphQLContext) => {
+            return await ctx.repos.order.getOrderEvents(id);
+        },
 
     },
 
@@ -41,7 +47,7 @@ const resolvers = {
 
             const now = new Date().toISOString();
 
-            return {...newOrder, status: 'PENDING', createdAt: now, updatedAt: now}; // TODO: fix by updating model
+            return { ...newOrder, status: 'PENDING', createdAt: now, updatedAt: now }; // TODO: fix by updating model
 
         },
 
@@ -54,17 +60,61 @@ const resolvers = {
                 throw new Error("Order not found");
             }
 
+
             // Validate order status
             if (order.status != "PENDING") {
                 throw new Error("Order status is not PENDING");
             }
 
-            // TODO: call external services
+            const orderId = id;
+
+            await ctx.repos.order.recordOrderEvent(orderId, "CONFIRMATION_STARTED");
+
+            try {
+
+                // Calling fraud service
+
+                // TODO: call external services
+                await ctx.repos.order.recordOrderEvent(orderId, "FRAUD_CHECK_COMPLETED", {
+                    fraudScore: 23
+                });
+
+            } catch (err) {
+                // to handle transport failures
+                await ctx.repos.order.recordOrderEvent(orderId, "ORDER_FAILED", {
+                    reason: "Fraud score exceeded threshold"
+                });
+
+                return false;
+            }
+
+
+            try {
+
+                // Calling shipping service
+
+                await ctx.repos.order.recordOrderEvent(orderId, "SHIPPING_QUOTE_RECEIVED", {
+                    shippingAmount: 14.50,
+                    provider: "DHL"
+                });
+
+            } catch (err) {
+                // to handle transport failures
+                await ctx.repos.order.recordOrderEvent(orderId, "ORDER_FAILED", {
+                    reason: "Shipping is quote not available"
+                });
+
+                return false;
+            }
+
 
             await ctx.repos.order.confirmOrder(id, null, null);
             order.status = "CONFIRMED";
 
+            await ctx.repos.order.recordOrderEvent(orderId, "ORDER_CONFIRMED");
+
             return order;
+
         }
 
     }

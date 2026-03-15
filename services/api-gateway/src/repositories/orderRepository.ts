@@ -1,4 +1,4 @@
-import type { Pool, RowDataPacket, ResultSetHeader } from "mysql2/promise";
+import type { Pool } from "mysql2/promise";
 
 
 export class OrderRepository {
@@ -35,6 +35,11 @@ export class OrderRepository {
           item.quantity
         ]);
       }
+
+      await connection.execute(
+        `INSERT INTO order_events (order_id, event_type) VALUES (?, 'ORDER_CREATED')`,
+        [orderId]
+      );
 
       await connection.commit();
 
@@ -94,6 +99,23 @@ export class OrderRepository {
     );
   }
 
+  async getOrdersByStatus(status) {
+
+    const [orders] = await this.pool.query(
+      `SELECT * FROM orders WHERE status = ? ORDER BY created_at DESC`, [status]
+    );
+
+    const [items] = await this.pool.query(
+      `SELECT order_id, sku, quantity FROM order_items`
+    );
+
+    const itemsByOrder = this.groupItems(items);
+
+    return orders.map(o =>
+      this.mapOrder(o, itemsByOrder[o.id] || [])
+    );
+  }
+
   /**
    * Update confirmation data
    */
@@ -121,6 +143,39 @@ export class OrderRepository {
      WHERE id = ?`,
       [error, id]
     );
+  }
+
+  /**
+   * Record event failures 
+   */
+  async recordOrderEvent(orderId, eventType, eventData: any = null) {
+
+    await this.pool.execute(
+      `INSERT INTO order_events (order_id, event_type, event_data)
+     VALUES (?, ?, ?)`,
+      [
+        orderId,
+        eventType,
+        eventData ? JSON.stringify(eventData) : null
+      ]
+    );
+  }
+
+  async getOrderEvents(orderId) {
+
+    const [events] = await this.pool.query(
+      `SELECT event_type, event_data, created_at
+     FROM order_events
+     WHERE order_id = ?
+     ORDER BY created_at`,
+      [orderId]
+    );
+
+    return events.map(e => ({
+      type: e.event_type,
+      data: e.event_data ? JSON.parse(e.event_data) : null,
+      createdAt: e.created_at
+    }));
   }
 
   private mapOrder(row, items) {

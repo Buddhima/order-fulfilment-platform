@@ -18,6 +18,12 @@ const typeDefs = `
     quantity: Int!
   }
 
+  type OrderEvent {
+    type: String!
+    data: JSON
+    createdAt: String!
+  }
+
 
   type Order {
     id: ID!
@@ -48,12 +54,15 @@ const typeDefs = `
   type Query {
     orders(status: OrderStatus): [Order]
     order(id: ID!): Order
+    orderEvents(id: ID!): [OrderEvent]
   }
 
   type Mutation {
     createOrder(input: CreateOrderInput!): Order
     confirmOrder(id: ID!): Order
   }
+
+  scalar JSON
 `;
 
 export default typeDefs;
