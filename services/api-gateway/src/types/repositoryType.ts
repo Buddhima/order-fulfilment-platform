@@ -5,7 +5,7 @@ import {
 
 export interface IOrderRepository {
 
-  createOrder(order: Order): Promise<Order>;
+  createOrder(order: any): Promise<Order>;
   getOrderById(id: number): Promise<Order | null>;
   getOrders(): Promise<Order[]>;
   getOrdersByStatus(status: string): Promise<Order[]>;

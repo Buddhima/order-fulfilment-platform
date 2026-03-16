@@ -50,9 +50,6 @@ interface ResultData {
 
 async function processOrder(order: any, clients: any, db: IOrderRepository): Promise<ResultData> {
 
-    console.log(order);
-    console.log(clients);
-
     const { inventory, fraud, shipping } = clients;
 
     // number of items

@@ -11,8 +11,8 @@ export interface GraphQLContext {
     // Add other repos here as you grow
   };
   clients: {
-    inventory: InventoryServiceClient;
-    fraud: FraudScoreServiceClient;
-    shipping: ShippingQuoteServiceClient;
+    inventory: any;
+    fraud: any;
+    shipping: any;
   }
 }

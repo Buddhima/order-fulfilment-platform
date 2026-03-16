@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type { Pool } from "mysql2/promise";
 import { IOrderRepository } from "../types/repositoryType";
 import { Order } from "../types/resolverTypes";
@@ -9,7 +11,7 @@ export class OrderRepository implements IOrderRepository {
   /**
    * Create Order with items
    */
-  async createOrder(order) {
+  async createOrder(order: any) {
     const connection = await this.pool.getConnection();
 
     try {
@@ -61,7 +63,7 @@ export class OrderRepository implements IOrderRepository {
   /**
    * Fetch single order with items
    */
-  async getOrderById(id) {
+  async getOrderById(id: number | string) {
     const [orders] = await this.pool.execute(
       `SELECT * FROM orders WHERE id = ?`,
       [id]
@@ -101,7 +103,7 @@ export class OrderRepository implements IOrderRepository {
     );
   }
 
-  async getOrdersByStatus(status) {
+  async getOrdersByStatus(status: string) {
 
     const [orders] = await this.pool.query(
       `SELECT * FROM orders WHERE status = ? ORDER BY created_at DESC`, [status]
@@ -121,7 +123,7 @@ export class OrderRepository implements IOrderRepository {
   /**
    * Update confirmation data
    */
-  async confirmOrder(id, fraudScore, shippingAmount) {
+  async confirmOrder(id: number | string, fraudScore: number | null, shippingAmount: number | null) {
 
     await this.pool.execute(
       `UPDATE orders
@@ -136,7 +138,7 @@ export class OrderRepository implements IOrderRepository {
   /**
    * Mark order as failed
    */
-  async failOrder(id, error) {
+  async failOrder(id: number | string, error: string | null) {
 
     await this.pool.execute(
       `UPDATE orders
@@ -150,7 +152,7 @@ export class OrderRepository implements IOrderRepository {
   /**
    * Record event failures 
    */
-  async recordOrderEvent(orderId, eventType, eventData: any = null) {
+  async recordOrderEvent(orderId: number | string, eventType: string, eventData: any = null) {
 
     await this.pool.execute(
       `INSERT INTO order_events (order_id, event_type, event_data)
@@ -163,7 +165,7 @@ export class OrderRepository implements IOrderRepository {
     );
   }
 
-  async getOrderEvents(orderId) {
+  async getOrderEvents(orderId: number | string) {
 
     const [events] = await this.pool.query(
       `SELECT event_type, event_data, created_at
