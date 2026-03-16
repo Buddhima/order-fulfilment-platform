@@ -181,7 +181,7 @@ const resolvers = {
 
             const now = new Date().toISOString();
 
-            return { ...newOrder, status: ORDER_STATUS.PENDING, createdAt: now, updatedAt: now }; // TODO: fix by updating model
+            return { ...newOrder, status: ORDER_STATUS.PENDING, createdAt: now, updatedAt: now };
 
         },
 

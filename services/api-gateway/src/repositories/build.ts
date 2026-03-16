@@ -19,7 +19,7 @@ export function buildRepositories(cfg: RuntimeConfig) {
 
   return {
     order: new OrderRepository(pool),
-    // add more repos here
+    // Add new DB repositories here
   };
 }
 
