@@ -15,7 +15,8 @@ import {
   IonToolbar,
   IonButtons,
   IonBackButton,
-  IonTitle
+  IonTitle,
+  IonBadge
 } from "@ionic/react";
 
 import { useState } from "react";
@@ -42,9 +43,14 @@ export default function OrderDetailsPage() {
 
   const handleConfirm = async () => {
     try {
-      await confirmOrder({ variables: { id } });
+      const result = await confirmOrder({ variables: { id } });
       refetch();
-      setSuccessMessage("Order confirmed successfully!");
+
+      if (result.data.confirmOrder.status == "CONFIRMED")
+        setSuccessMessage("Order confirmed successfully!");
+      else
+        setErrorMessage("Failed to confirm order");
+
     } catch (error) {
       setErrorMessage(error.message || "Failed to confirm order");
     }
@@ -81,7 +87,14 @@ export default function OrderDetailsPage() {
             <IonItem>
               <IonLabel>
                 <strong>Status</strong>
-                <p>{order?.status}</p>
+                <br />
+                <IonBadge color={
+                  order.status === "PENDING" ? "warning" :
+                    order.status === "CONFIRMED" ? "success" :
+                      "danger"
+                }>
+                  {order.status}
+                </IonBadge>
               </IonLabel>
             </IonItem>
 
