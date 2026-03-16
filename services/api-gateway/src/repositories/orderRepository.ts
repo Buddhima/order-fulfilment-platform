@@ -1,7 +1,9 @@
 import type { Pool } from "mysql2/promise";
+import { IOrderRepository } from "../types/repositoryType";
+import { Order } from "../types/resolverTypes";
 
 
-export class OrderRepository {
+export class OrderRepository implements IOrderRepository {
   constructor(private readonly pool: Pool) { }
 
   /**

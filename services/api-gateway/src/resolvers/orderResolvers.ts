@@ -2,14 +2,30 @@ import type { GraphQLContext } from "../types/context";
 import { ORDER_EVENTS } from "../constants/orderEvents";
 import { ORDER_STATUS } from "../constants/orderStatus";
 
-async function reserveInventory(client: any, order_id: string, items: any[]) {
+import {
+    OrdersArgs,
+    OrderArgs,
+    OrderEventsArgs,
+    CreateOrderArgs,
+    ConfirmOrderArgs,
+    Order
+} from "../types/resolverTypes";
+
+import {
+    InventoryServiceResponse,
+    FraudServiceResponse,
+    ShippingServiceResponse
+} from "../types/serviceTypes";
+import { IOrderRepository } from "../types/repositoryType";
+
+async function reserveInventory(client: any, order_id: string, items: any[]): Promise<InventoryServiceResponse> {
     return await client.reserveItems({
         order_id,
         items
     });
 }
 
-async function scoreOrder(client: any, order_id: string, customer_identifier: string, total_quantity: string) {
+async function scoreOrder(client: any, order_id: string, customer_identifier: string, total_quantity: string): Promise<FraudServiceResponse> {
     return await client.scoreOrder({
         order_id,
         customer_identifier,
@@ -17,7 +33,7 @@ async function scoreOrder(client: any, order_id: string, customer_identifier: st
     });
 }
 
-async function getQuote(client: any, order_id: string, destination_postal_code: string, item_count: number, total_quantity: number) {
+async function getQuote(client: any, order_id: string, destination_postal_code: string, item_count: number, total_quantity: number): Promise<ShippingServiceResponse> {
     return await client.getQuote({
         order_id,
         destination_postal_code,
@@ -26,7 +42,16 @@ async function getQuote(client: any, order_id: string, destination_postal_code: 
     })
 }
 
-async function processOrder(order, clients, db) {
+interface ResultData {
+    success: boolean;
+    fraudScore: number | null;
+    shippingAmount: number | null;
+}
+
+async function processOrder(order: any, clients: any, db: IOrderRepository): Promise<ResultData> {
+
+    console.log(order);
+    console.log(clients);
 
     const { inventory, fraud, shipping } = clients;
 
@@ -34,24 +59,26 @@ async function processOrder(order, clients, db) {
     const numberOfItems = order.items.length;
 
     // total quantity
-    const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+    const totalQuantity = order.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
 
     // results from the services
-    const resultData = {
+    const resultData: ResultData = {
+        success: false,
         fraudScore: null,
         shippingAmount: null
     };
 
+
     const orderId = order.id;
 
     // handler when backend response is failure
-    const handleServiceFailure = async (status, error) => {
+    const handleServiceFailure = async (status: string, error: any) => {
         await db.recordOrderEvent(orderId, status, error);
         await db.failOrder(orderId, status);
     };
 
     // handler when the service is failing
-    const handleServiceError = async (status, error) => {
+    const handleServiceError = async (status: string, error: any) => {
         await db.recordOrderEvent(orderId, status, error);
         await db.failOrder(orderId, status);
     };
@@ -60,12 +87,12 @@ async function processOrder(order, clients, db) {
         {
             name: "inventory",
             call: () => reserveInventory(inventory, order.orderId, order.items),
-            interpret: (res) => res.reserved === true,
-            onSuccess: async (res) => {
+            interpret: (res: any): boolean => res.reserved === true,
+            onSuccess: async (_: any) => {
                 await db.recordOrderEvent(orderId, ORDER_EVENTS.INVENTORY_RESERVATION_SUCCESS);
             },
-            onFailure: async (res) => await handleServiceFailure(ORDER_EVENTS.INVENTORY_RESERVATION_FAILED, res),
-            onError: async (error) => await handleServiceError(ORDER_EVENTS.INVENTORY_RESERVATION_ERROR, error),
+            onFailure: async (res: any) => await handleServiceFailure(ORDER_EVENTS.INVENTORY_RESERVATION_FAILED, res),
+            onError: async (error: any) => await handleServiceError(ORDER_EVENTS.INVENTORY_RESERVATION_ERROR, error),
         },
         {
             name: "fraud",
@@ -75,13 +102,13 @@ async function processOrder(order, clients, db) {
                 order.customerIdentifier,
                 totalQuantity
             ),
-            interpret: (res) => res.blocked === false,
-            onSuccess: async (res) => {
+            interpret: (res: any): boolean => res.blocked === false,
+            onSuccess: async (res: FraudServiceResponse) => {
                 resultData.fraudScore = res.score;
                 await db.recordOrderEvent(orderId, ORDER_EVENTS.ORDER_SCORING_SUCCESS);
             },
-            onFailure: async (res) => await handleServiceFailure(ORDER_EVENTS.ORDER_SCORING_FAILED, res),
-            onError: async (error) => await handleServiceError(ORDER_EVENTS.ORDER_SCORING_ERROR, error),
+            onFailure: async (res: any) => await handleServiceFailure(ORDER_EVENTS.ORDER_SCORING_FAILED, res),
+            onError: async (error: any) => await handleServiceError(ORDER_EVENTS.ORDER_SCORING_ERROR, error),
         },
         {
             name: "shipping",
@@ -92,13 +119,13 @@ async function processOrder(order, clients, db) {
                 numberOfItems,
                 totalQuantity
             ),
-            interpret: (res) => res.available == true,
-            onSuccess: async (res) => {
+            interpret: (res: any): boolean => res.available == true,
+            onSuccess: async (res: ShippingServiceResponse) => {
                 resultData.shippingAmount = res.amount;
                 await db.recordOrderEvent(orderId, ORDER_EVENTS.SHIPPING_QUOTE_SUCCESS);
             },
-            onFailure: async (res) => await handleServiceFailure(ORDER_EVENTS.SHIPPING_QUOTE_FAILED, res),
-            onError: async (error) => await handleServiceError(ORDER_EVENTS.SHIPPING_QUOTE_ERROR, error),
+            onFailure: async (res: any) => await handleServiceFailure(ORDER_EVENTS.SHIPPING_QUOTE_FAILED, res),
+            onError: async (error: any) => await handleServiceError(ORDER_EVENTS.SHIPPING_QUOTE_ERROR, error),
         }
     ];
 
@@ -137,7 +164,7 @@ async function processOrder(order, clients, db) {
 const resolvers = {
     Query: {
 
-        orders: async (_, { status }, ctx: GraphQLContext) => {
+        orders: async (_: unknown, { status }: OrdersArgs, ctx: GraphQLContext) => {
 
             if (!status) {
                 const orders = await ctx.repos.order.getOrders();
@@ -145,15 +172,13 @@ const resolvers = {
             } else {
                 return await ctx.repos.order.getOrdersByStatus(status);
             }
-
-            // return orders.filter(order => order.status === status);
         },
 
-        order: async (_, { id }, ctx: GraphQLContext) => {
+        order: async (_: unknown, { id }: OrderArgs, ctx: GraphQLContext) => {
             return await ctx.repos.order.getOrderById(id);
         },
 
-        orderEvents: async (_, { id }, ctx: GraphQLContext) => {
+        orderEvents: async (_: unknown, { id }: OrderEventsArgs, ctx: GraphQLContext) => {
             return await ctx.repos.order.getOrderEvents(id);
         },
 
@@ -161,7 +186,7 @@ const resolvers = {
 
     Mutation: {
 
-        createOrder: async (_, { input }, ctx: GraphQLContext) => {
+        createOrder: async (_: unknown, { input }: CreateOrderArgs, ctx: GraphQLContext) => {
 
             const { customerIdentifier, destinationPostalCode, items } = input;
 
@@ -185,7 +210,7 @@ const resolvers = {
 
         },
 
-        confirmOrder: async (_, { id }, ctx: GraphQLContext) => {
+        confirmOrder: async (_: unknown, { id }: ConfirmOrderArgs, ctx: GraphQLContext) => {
 
             const db = ctx.repos.order;
             const order = await db.getOrderById(id);
