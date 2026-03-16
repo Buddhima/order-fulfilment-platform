@@ -1,0 +1,5 @@
+export const ORDER_STATUS = {
+  PENDING: "PENDING",
+  CONFIRMED: "CONFIRMED",
+  FAILED: "FAILED",
+} as const;

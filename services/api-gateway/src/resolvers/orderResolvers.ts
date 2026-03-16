@@ -1,4 +1,6 @@
 import type { GraphQLContext } from "../types/context";
+import { ORDER_EVENTS } from "../constants/orderEvents";
+import { ORDER_STATUS } from "../constants/orderStatus";
 
 async function reserveInventory(client: any, order_id: string, items: any[]) {
     return await client.reserveItems({
@@ -60,10 +62,10 @@ async function processOrder(order, clients, db) {
             call: () => reserveInventory(inventory, order.orderId, order.items),
             interpret: (res) => res.reserved === true,
             onSuccess: async (res) => {
-                await db.recordOrderEvent(orderId, "INVENTORY_RESERVATION_SUCCESS");
+                await db.recordOrderEvent(orderId, ORDER_EVENTS.INVENTORY_RESERVATION_SUCCESS);
             },
-            onFailure: async (res) => await handleServiceFailure("INVENTORY_RESERVATION_FAILED", res),
-            onError: async (error) => await handleServiceError("INVENTORY_RESERVATION_ERROR", error),
+            onFailure: async (res) => await handleServiceFailure(ORDER_EVENTS.INVENTORY_RESERVATION_FAILED, res),
+            onError: async (error) => await handleServiceError(ORDER_EVENTS.INVENTORY_RESERVATION_ERROR, error),
         },
         {
             name: "fraud",
@@ -76,10 +78,10 @@ async function processOrder(order, clients, db) {
             interpret: (res) => res.blocked === false,
             onSuccess: async (res) => {
                 resultData.fraudScore = res.score;
-                await db.recordOrderEvent(orderId, "ORDER_SCORING_SUCCESS");
+                await db.recordOrderEvent(orderId, ORDER_EVENTS.ORDER_SCORING_SUCCESS);
             },
-            onFailure: async (res) => await handleServiceFailure("ORDER_SCORING_FAILED", res),
-            onError: async (error) => await handleServiceError("ORDER_SCORING_ERROR", error),
+            onFailure: async (res) => await handleServiceFailure(ORDER_EVENTS.ORDER_SCORING_FAILED, res),
+            onError: async (error) => await handleServiceError(ORDER_EVENTS.ORDER_SCORING_ERROR, error),
         },
         {
             name: "shipping",
@@ -93,10 +95,10 @@ async function processOrder(order, clients, db) {
             interpret: (res) => res.available == true,
             onSuccess: async (res) => {
                 resultData.shippingAmount = res.amount;
-                await db.recordOrderEvent(orderId, "SHIPPING_QUOTE_SUCCESS");
+                await db.recordOrderEvent(orderId, ORDER_EVENTS.SHIPPING_QUOTE_SUCCESS);
             },
-            onFailure: async (res) => await handleServiceFailure("SHIPPING_QUOTE_FAILED", res),
-            onError: async (error) => await handleServiceError("SHIPPING_QUOTE_ERROR", error),
+            onFailure: async (res) => await handleServiceFailure(ORDER_EVENTS.SHIPPING_QUOTE_FAILED, res),
+            onError: async (error) => await handleServiceError(ORDER_EVENTS.SHIPPING_QUOTE_ERROR, error),
         }
     ];
 
@@ -179,7 +181,7 @@ const resolvers = {
 
             const now = new Date().toISOString();
 
-            return { ...newOrder, status: 'PENDING', createdAt: now, updatedAt: now }; // TODO: fix by updating model
+            return { ...newOrder, status: ORDER_STATUS.PENDING, createdAt: now, updatedAt: now }; // TODO: fix by updating model
 
         },
 
@@ -194,13 +196,13 @@ const resolvers = {
             }
 
             // Validate order status
-            if (order.status != "PENDING") {
+            if (order.status != ORDER_STATUS.PENDING) {
                 throw new Error("Order status is not PENDING");
             }
 
             const orderId = id;
 
-            await db.recordOrderEvent(orderId, "CONFIRMATION_STARTED");
+            await db.recordOrderEvent(orderId, ORDER_EVENTS.CONFIRMATION_STARTED);
 
             const processOrderResult = await processOrder(order, ctx.clients, db);
 
@@ -208,12 +210,12 @@ const resolvers = {
 
             if (processOrderResult.success) {
                 await db.confirmOrder(orderId, processOrderResult.fraudScore, processOrderResult.shippingAmount);
-                await db.recordOrderEvent(orderId, "ORDER_CONFIRMED");
-                orderStatus = "CONFIRMED";
+                await db.recordOrderEvent(orderId, ORDER_EVENTS.ORDER_CONFIRMED);
+                orderStatus = ORDER_STATUS.CONFIRMED;
 
             } else {
-                await db.recordOrderEvent(orderId, "ORDER_FAILED");
-                orderStatus = "FAILED"
+                await db.recordOrderEvent(orderId, ORDER_EVENTS.ORDER_FAILED);
+                orderStatus = ORDER_STATUS.FAILED;
             }
 
             // Reduce load on db
