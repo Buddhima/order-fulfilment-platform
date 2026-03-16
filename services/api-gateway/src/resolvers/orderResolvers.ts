@@ -1,5 +1,137 @@
 import type { GraphQLContext } from "../types/context";
 
+async function reserveInventory(client: any, order_id: string, items: any[]) {
+    return await client.reserveItems({
+        order_id,
+        items
+    });
+}
+
+async function scoreOrder(client: any, order_id: string, customer_identifier: string, total_quantity: string) {
+    return await client.scoreOrder({
+        order_id,
+        customer_identifier,
+        total_quantity
+    });
+}
+
+async function getQuote(client: any, order_id: string, destination_postal_code: string, item_count: number, total_quantity: number) {
+    return await client.getQuote({
+        order_id,
+        destination_postal_code,
+        item_count,
+        total_quantity
+    })
+}
+
+async function processOrder(order, clients, db) {
+
+    const { inventory, fraud, shipping } = clients;
+
+    // number of items
+    const numberOfItems = order.items.length;
+
+    // total quantity
+    const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+
+    // results from the services
+    const resultData = {
+        fraudScore: null,
+        shippingAmount: null
+    };
+
+    const orderId = order.id;
+
+    // handler when backend response is failure
+    const handleServiceFailure = async (status, error) => {
+        await db.recordOrderEvent(orderId, status, error);
+        await db.failOrder(orderId, status);
+    };
+
+    // handler when the service is failing
+    const handleServiceError = async (status, error) => {
+        await db.recordOrderEvent(orderId, status, error);
+        await db.failOrder(orderId, status);
+    };
+
+    const services = [
+        {
+            name: "inventory",
+            call: () => reserveInventory(inventory, order.orderId, order.items),
+            interpret: (res) => res.reserved === true,
+            onSuccess: async (res) => {
+                await db.recordOrderEvent(orderId, "INVENTORY_RESERVATION_SUCCESS");
+            },
+            onFailure: async (res) => await handleServiceFailure("INVENTORY_RESERVATION_FAILED", res),
+            onError: async (error) => await handleServiceError("INVENTORY_RESERVATION_ERROR", error),
+        },
+        {
+            name: "fraud",
+            call: () => scoreOrder(
+                fraud,
+                order.orderId,
+                order.customerIdentifier,
+                totalQuantity
+            ),
+            interpret: (res) => res.blocked === false,
+            onSuccess: async (res) => {
+                resultData.fraudScore = res.score;
+                await db.recordOrderEvent(orderId, "ORDER_SCORING_SUCCESS");
+            },
+            onFailure: async (res) => await handleServiceFailure("ORDER_SCORING_FAILED", res),
+            onError: async (error) => await handleServiceError("ORDER_SCORING_ERROR", error),
+        },
+        {
+            name: "shipping",
+            call: () => getQuote(
+                shipping,
+                order.orderId,
+                order.destinationPostalCode,
+                numberOfItems,
+                totalQuantity
+            ),
+            interpret: (res) => res.available == true,
+            onSuccess: async (res) => {
+                resultData.shippingAmount = res.amount;
+                await db.recordOrderEvent(orderId, "SHIPPING_QUOTE_SUCCESS");
+            },
+            onFailure: async (res) => await handleServiceFailure("SHIPPING_QUOTE_FAILED", res),
+            onError: async (error) => await handleServiceError("SHIPPING_QUOTE_ERROR", error),
+        }
+    ];
+
+    // Execute the services
+    const results = await Promise.all(
+        services.map(async (svc) => {
+            try {
+                const response = await svc.call();
+                const success = svc.interpret(response);
+
+                if (success)
+                    svc.onSuccess(response);
+                else
+                    svc.onFailure(response);
+
+                return success;
+
+            } catch (err) {
+                svc.onError(err);
+
+                return false;
+            }
+        })
+    );
+
+    const anyFailed = results.some(r => !r);
+
+    return {
+        success: !anyFailed,
+        fraudScore: resultData.fraudScore,
+        shippingAmount: resultData.shippingAmount
+    };
+}
+
+
 const resolvers = {
     Query: {
 
@@ -53,13 +185,13 @@ const resolvers = {
 
         confirmOrder: async (_, { id }, ctx: GraphQLContext) => {
 
-            const order = await ctx.repos.order.getOrderById(id);
+            const db = ctx.repos.order;
+            const order = await db.getOrderById(id);
 
             // Validate order exists
             if (!order) {
                 throw new Error("Order not found");
             }
-
 
             // Validate order status
             if (order.status != "PENDING") {
@@ -68,53 +200,26 @@ const resolvers = {
 
             const orderId = id;
 
-            await ctx.repos.order.recordOrderEvent(orderId, "CONFIRMATION_STARTED");
+            await db.recordOrderEvent(orderId, "CONFIRMATION_STARTED");
 
-            try {
+            const processOrderResult = await processOrder(order, ctx.clients, db);
 
-                // Calling fraud service
+            let orderStatus = ""
 
-                // TODO: call external services
-                await ctx.repos.order.recordOrderEvent(orderId, "FRAUD_CHECK_COMPLETED", {
-                    fraudScore: 23
-                });
+            if (processOrderResult.success) {
+                await db.confirmOrder(orderId, processOrderResult.fraudScore, processOrderResult.shippingAmount);
+                await db.recordOrderEvent(orderId, "ORDER_CONFIRMED");
+                orderStatus = "CONFIRMED";
 
-            } catch (err) {
-                // to handle transport failures
-                await ctx.repos.order.recordOrderEvent(orderId, "ORDER_FAILED", {
-                    reason: "Fraud score exceeded threshold"
-                });
-
-                return false;
+            } else {
+                await db.recordOrderEvent(orderId, "ORDER_FAILED");
+                orderStatus = "FAILED"
             }
 
-
-            try {
-
-                // Calling shipping service
-
-                await ctx.repos.order.recordOrderEvent(orderId, "SHIPPING_QUOTE_RECEIVED", {
-                    shippingAmount: 14.50,
-                    provider: "DHL"
-                });
-
-            } catch (err) {
-                // to handle transport failures
-                await ctx.repos.order.recordOrderEvent(orderId, "ORDER_FAILED", {
-                    reason: "Shipping is quote not available"
-                });
-
-                return false;
-            }
-
-
-            await ctx.repos.order.confirmOrder(id, null, null);
-            order.status = "CONFIRMED";
-
-            await ctx.repos.order.recordOrderEvent(orderId, "ORDER_CONFIRMED");
+            // Reduce load on db
+            order.status = orderStatus;
 
             return order;
-
         }
 
     }

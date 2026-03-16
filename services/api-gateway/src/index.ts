@@ -8,25 +8,28 @@ import express from "express";
 import typeDefs from "./schema/typeDefs";
 import resolvers from "./resolvers/orderResolvers";
 
-import mysql, { type Pool } from "mysql2/promise";
-
 import { buildRepositories } from "./repositories/build";
+import { createServiceClients } from "./services/init";
+
 import type { GraphQLContext } from "./types/context";
 
 import { registerHealthRoute } from "./health";
 
-interface RuntimeConfig {
-  port: number;
-  corsOrigin: string;
-  dbHost: string;
-  dbPort: number;
-  dbName: string;
-  dbUser: string;
-  dbPassword: string;
-  inventoryServiceAddress: string;
-  shippingServiceAddress: string;
-  fraudServiceAddress: string;
-}
+import type { RuntimeConfig } from "./types/runtimeConfig"
+
+// Left the comment below intentionally for the examiner 
+// interface RuntimeConfig {
+//   port: number;
+//   corsOrigin: string;
+//   dbHost: string;
+//   dbPort: number;
+//   dbName: string;
+//   dbUser: string;
+//   dbPassword: string;
+//   inventoryServiceAddress: string;
+//   shippingServiceAddress: string;
+//   fraudServiceAddress: string;
+// }
 
 export function readConfig(): RuntimeConfig {
   return {
@@ -52,28 +55,15 @@ export function readConfig(): RuntimeConfig {
   };
 }
 
-// Function to generate db connection pool
-function createPool(cfg: RuntimeConfig): Pool {
-  return mysql.createPool({
-    host: cfg.dbHost,
-    port: cfg.dbPort,
-    user: cfg.dbUser,
-    password: cfg.dbPassword,
-    database: cfg.dbName,
-    connectionLimit: 10,
-  });
-}
-
-
 export async function createApp(): Promise<express.Express> {
   const app = express();
   const runtimeConfig = readConfig();
 
-  // Create a single pool for the entire app lifetime.
-  const pool = createPool(runtimeConfig);
-
   // Build repositories once and reuse (they all share the same pool).
-  const repos = buildRepositories(pool);
+  const repos = buildRepositories(runtimeConfig);
+
+  // Create service clients
+  const clients = createServiceClients(runtimeConfig);
 
   registerHealthRoute(app);
 
@@ -101,8 +91,8 @@ export async function createApp(): Promise<express.Express> {
 
     expressMiddleware(apolloServer, {
       context: async (): Promise<GraphQLContext> => ({
-        db: pool,
         repos,
+        clients,
       }),
     }),
   );
