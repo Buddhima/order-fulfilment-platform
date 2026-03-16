@@ -13,6 +13,8 @@
     "stubs": "npx --no-install buf generate",
     "pack:local": "sh ./scripts/generate.sh"
   },
+  "type": "module",
+  "main": "runtime/index.js",
   "files": [
     "build/**/*",
     "runtime/**/*",
