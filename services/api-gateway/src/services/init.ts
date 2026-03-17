@@ -13,6 +13,8 @@ import * as grpc from "@grpc/grpc-js";
 
 export function createServiceClients(cfg: RuntimeConfig) {
 
+    const timeoutMs = 5000;
+
     const inventoryClient = () => {
         const client = new InventoryServiceClient(
             cfg.inventoryServiceAddress,
@@ -39,8 +41,12 @@ export function createServiceClients(cfg: RuntimeConfig) {
                     req.setItemsList(protoItems);
                 }
 
+                const deadline = new Date(Date.now() + timeoutMs);
+
                 return new Promise((resolve, reject) => {
-                    client.reserveItems(req, (err, res: any) => {
+
+
+                    client.reserveItems(req, { deadline }, (err, res: any) => {
                         if (err) return reject(err);
 
                         const results = res.getResultsList().map((r: any) => ({
@@ -68,8 +74,6 @@ export function createServiceClients(cfg: RuntimeConfig) {
             grpc.credentials.createInsecure(),
         );
 
-        // console.log("fraud client init");
-
         return {
             /**
              * Score an order for fraud risk
@@ -85,8 +89,10 @@ export function createServiceClients(cfg: RuntimeConfig) {
                 if (data.total_quantity != null)
                     req.setTotalQuantity(data.total_quantity);
 
+                const deadline = new Date(Date.now() + timeoutMs);
+
                 return new Promise((resolve, reject) => {
-                    client.scoreOrder(req, (error, res: any) => {
+                    client.scoreOrder(req, { deadline }, (error, res: any) => {
                         if (error) {
                             reject(error);
                             return;
@@ -126,8 +132,10 @@ export function createServiceClients(cfg: RuntimeConfig) {
                 if (data.item_count != null) req.setItemCount(data.item_count);
                 if (data.total_quantity != null) req.setTotalQuantity(data.total_quantity);
 
+                const deadline = new Date(Date.now() + timeoutMs);
+
                 return new Promise((resolve, reject) => {
-                    client.getQuote(req, (error, res: any) => {
+                    client.getQuote(req, { deadline }, (error, res: any) => {
                         if (error) {
                             reject(error);
                             return;
