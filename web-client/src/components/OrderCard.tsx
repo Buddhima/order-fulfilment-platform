@@ -1,12 +1,11 @@
-import { IonItem, IonLabel, IonBadge } from "@ionic/react";
-import { useHistory } from "react-router";
+import { IonItem, IonLabel, IonBadge, useIonRouter } from "@ionic/react";
 
 export default function OrderCard({ order }: any) {
 
-    const history = useHistory();
+    const router = useIonRouter();
 
     return (
-        <IonItem button onClick={() => history.push(`/orders/${order.id}`)}>
+        <IonItem button onClick={() => router.push(`/orders/${order.id}`)}>
             <IonLabel>
                 <h2>Order #{order.id}</h2>
                 <p>Customer: {order.customerIdentifier}</p>
