@@ -68,7 +68,7 @@ export function createServiceClients(cfg: RuntimeConfig) {
             grpc.credentials.createInsecure(),
         );
 
-        console.log("fraud client init");
+        // console.log("fraud client init");
 
         return {
             /**
@@ -109,7 +109,7 @@ export function createServiceClients(cfg: RuntimeConfig) {
             grpc.credentials.createInsecure(),
         );
 
-        console.log("shipping client init");
+        // console.log("shipping client init");
 
         return {
             /**
