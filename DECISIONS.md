@@ -53,6 +53,15 @@ Jest based tests for testing `api-gateway` service is located at `api-gatewa/tes
 
 - Record the main alternatives you considered and why you did not choose them.
 
+1. At the frontend Ionic framework is used to compatible with mobile versions, and facilitate navigation (back button and page navigation implementation). Using UI framework such Bootstrap would support responsive UI, but styling and mobile friendliness would require more effort.
+2. ORM was not used for creating `OrderRepository` to reduce further external dependancies. 
+
 ## Known Gaps Or Next Steps
 
 - Note any limitations, unfinished work, or improvements you would make next.
+
+1. Backend testing is not fully covering all the functionalities, and lacking scenarios such as mocking external serices
+2. Frontend tests are shell structured, and would require more efforts to implement.
+3. Some parameters have been hardcoded such as service timeout, backend url at web-app, which should be externalised.
+4. Making api-gateway function calls more type safe (specifically around `OrderRepository`), some are intentionally ignored to resolve later.
+5. At resolver, external-service-call related function calls can be externalised to helper to make it clearer.
