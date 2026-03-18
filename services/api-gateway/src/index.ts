@@ -8,14 +8,12 @@ import express from "express";
 import typeDefs from "./schema/typeDefs";
 import resolvers from "./resolvers/orderResolvers";
 
-import { buildRepositories } from "./repositories/build";
-import { createServiceClients } from "./services/init";
-
 import type { GraphQLContext } from "./types/context";
 
 import { registerHealthRoute } from "./health";
 
 import type { RuntimeConfig } from "./types/runtimeConfig"
+import { createOrderService } from "./modules/order";
 
 // Left the comment below intentionally for the examiner 
 // interface RuntimeConfig {
@@ -59,11 +57,7 @@ export async function createApp(): Promise<express.Express> {
   const app = express();
   const runtimeConfig = readConfig();
 
-  // Build repositories once and reuse (they all share the same pool).
-  const repos = buildRepositories(runtimeConfig);
-
-  // Create service clients
-  const clients = createServiceClients(runtimeConfig);
+  const orderService = createOrderService(runtimeConfig);
 
   registerHealthRoute(app);
 
@@ -91,8 +85,7 @@ export async function createApp(): Promise<express.Express> {
 
     expressMiddleware(apolloServer, {
       context: async (): Promise<GraphQLContext> => ({
-        repos,
-        clients,
+        orderService
       }),
     }),
   );
