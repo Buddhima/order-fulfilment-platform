@@ -14,13 +14,8 @@ function createPool(cfg: RuntimeConfig): Pool {
   });
 }
 
-export function buildRepositories(cfg: RuntimeConfig) {
+export function buildRepositories(cfg: RuntimeConfig): OrderRepository {
   const pool = createPool(cfg);
 
-  return {
-    order: new OrderRepository(pool),
-    // Add new DB repositories here
-  };
+  return new OrderRepository(pool);
 }
-
-export type Repositories = ReturnType<typeof buildRepositories>;
