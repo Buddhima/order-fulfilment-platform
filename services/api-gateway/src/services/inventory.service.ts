@@ -1,6 +1,6 @@
 import { InventoryServiceClient } from "@assessment/proto/build/inventory/v1/inventory_grpc_pb.js";
 import { ReserveItemsRequest, ReserveItem } from "@assessment/proto/build/inventory/v1/inventory_pb.js";
-import { RuntimeConfig } from "../types/runtimeConfig";
+import { RuntimeConfig } from "../types/runtime-config.type";
 import * as grpc from "@grpc/grpc-js";
 
 export interface ReserveInventoryRequest {

@@ -1,8 +1,8 @@
 import type { OrderRepository } from "../../repositories/orderRepository";
 import type { ValidatorService } from "./validator.service";
 
-import { ORDER_EVENTS } from "../../constants/orderEvents";
-import { ORDER_STATUS } from "../../constants/orderStatus";
+import { ORDER_EVENTS } from "../../constants/order-event.constants";
+import { ORDER_STATUS } from "../../constants/order-status.constants";
 
 
 export class OrderService {

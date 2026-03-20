@@ -1,6 +1,6 @@
 import { ShippingQuoteServiceClient } from "@assessment/proto/build/shipping/v1/shipping_grpc_pb";
 import { GetQuoteRequest } from "@assessment/proto/build/shipping/v1/shipping_pb";
-import { RuntimeConfig } from "../types/runtimeConfig";
+import { RuntimeConfig } from "../types/runtime-config.type";
 import * as grpc from "@grpc/grpc-js";
 
 export interface ShippingQuoteRequest {
