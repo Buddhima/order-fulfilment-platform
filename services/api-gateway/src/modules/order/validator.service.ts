@@ -1,4 +1,4 @@
-import { OrderRepository } from "../../repositories/orderRepository";
+import { OrderRepository } from "../../repositories/order.repository";
 import { FraudService } from "../../services/fraud.service";
 import { InventoryService } from "../../services/inventory.service";
 import { ShippingService } from "../../services/shipping.service";

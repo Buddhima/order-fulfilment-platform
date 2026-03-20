@@ -1,4 +1,4 @@
-import type { OrderRepository } from "../../repositories/orderRepository";
+import type { OrderRepository } from "../../repositories/order.repository";
 import type { ValidatorService } from "./validator.service";
 
 import { ORDER_EVENTS } from "../../constants/order-event.constants";
