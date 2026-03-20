@@ -1,8 +1,8 @@
 // @ts-nocheck
 
 import type { Pool } from "mysql2/promise";
-import { IOrderRepository } from "../types/repositoryType";
-import { Order } from "../types/resolverTypes";
+import { IOrderRepository } from "../types/order.repository.type";
+import { Order } from "../types/order.resolver.types";
 
 
 export class OrderRepository implements IOrderRepository {

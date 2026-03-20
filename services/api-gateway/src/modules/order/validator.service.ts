@@ -2,7 +2,7 @@ import { OrderRepository } from "../../repositories/orderRepository";
 import { FraudService } from "../../services/fraud.service";
 import { InventoryService } from "../../services/inventory.service";
 import { ShippingService } from "../../services/shipping.service";
-import { ORDER_EVENTS } from "../../constants/orderEvents";
+import { ORDER_EVENTS } from "../../constants/order-event.constants";
 
 export interface ResultData {
     success: boolean;
