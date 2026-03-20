@@ -1,4 +1,4 @@
-import { OrderRepository } from "./orderRepository";
+import { OrderRepository } from "./order.repository";
 import { RuntimeConfig } from "../types/runtime-config.type";
 import mysql, { type Pool } from "mysql2/promise";
 
