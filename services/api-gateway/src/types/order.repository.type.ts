@@ -1,7 +1,7 @@
 import {
     Order,
     OrderEvent
-} from "./resolverTypes";
+} from "./order.resolver.types";
 
 export interface IOrderRepository {
 

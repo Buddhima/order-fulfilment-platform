@@ -5,14 +5,14 @@ import { expressMiddleware } from "@as-integrations/express5";
 import cors from "cors";
 import env from "env-var";
 import express from "express";
-import typeDefs from "./schema/typeDefs";
-import resolvers from "./resolvers/orderResolvers";
+import typeDefs from "./schema/order.type";
+import resolvers from "./resolvers/order.resolver";
 
-import type { GraphQLContext } from "./types/context";
+import type { GraphQLContext } from "./types/context.type";
 
 import { registerHealthRoute } from "./health";
 
-import type { RuntimeConfig } from "./types/runtimeConfig"
+import type { RuntimeConfig } from "./types/runtime-config.type"
 import { createOrderService } from "./modules/order";
 
 // Left the comment below intentionally for the examiner 

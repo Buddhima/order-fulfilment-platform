@@ -1,4 +1,4 @@
-import type { GraphQLContext } from "../types/context";
+import type { GraphQLContext } from "../types/context.type";
 
 import {
     OrdersArgs,
@@ -6,7 +6,7 @@ import {
     OrderEventsArgs,
     CreateOrderArgs,
     ConfirmOrderArgs,
-} from "../types/resolverTypes";
+} from "../types/order.resolver.types";
 
 
 const resolvers = {

@@ -1,5 +1,5 @@
 import { OrderRepository } from "./orderRepository";
-import { RuntimeConfig } from "../types/runtimeConfig";
+import { RuntimeConfig } from "../types/runtime-config.type";
 import mysql, { type Pool } from "mysql2/promise";
 
 // Function to generate db connection pool

@@ -1,6 +1,6 @@
 import { FraudScoreServiceClient } from "@assessment/proto/build/fraud/v1/fraud_grpc_pb";
 import { ScoreOrderRequest } from "@assessment/proto/build/fraud/v1/fraud_pb";
-import { RuntimeConfig } from "../types/runtimeConfig";
+import { RuntimeConfig } from "../types/runtime-config.type";
 import * as grpc from "@grpc/grpc-js";
 
 export interface GetScoreRequest {

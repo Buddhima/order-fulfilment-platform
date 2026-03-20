@@ -1,4 +1,4 @@
-import { RuntimeConfig } from "../../types/runtimeConfig";
+import { RuntimeConfig } from "../../types/runtime-config.type";
 
 import { OrderService } from "./order.service";
 import { buildRepositories } from "../../repositories/init";
